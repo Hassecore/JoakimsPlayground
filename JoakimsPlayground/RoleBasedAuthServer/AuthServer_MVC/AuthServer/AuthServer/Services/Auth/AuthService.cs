@@ -1,5 +1,6 @@
 ﻿using AuthServer.Data.UserManagement;
 using AuthServer.Models;
+using AuthServer.Models.Enums;
 using AuthServer.Services.Caching;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
@@ -14,34 +15,79 @@ namespace AuthServer.Services.Auth
 	{
 		private readonly UserManager<ApplicationUser> _userManager;
 		private readonly RoleManager<IdentityRole> _roleManager;
-		private readonly IConfiguration _configuration;
+        SignInManager<ApplicationUser> _signInManager;
+        private readonly IConfiguration _configuration;
 		private readonly ICachingService _cachingService;
 
 		public AuthService(UserManager<ApplicationUser> userManager,
 						   RoleManager<IdentityRole> roleManager,
-						   IConfiguration configuration,
+						   SignInManager<ApplicationUser> signInManager,
+                           IConfiguration configuration,
 						   ICachingService cachingService)
 		{
 			_userManager = userManager;
 			_roleManager = roleManager;
-			_configuration = configuration;
+			_signInManager = signInManager;
+            _configuration = configuration;
 			_cachingService = cachingService;
+
 		}
 
-		public async Task<(int, string, string)> HandleGoogleUserAsync(RegisterDto model, string roleName)
+		public async Task<(int, string, string)> HandleGoogleUserAsync(ExternalUserDto userDto)
 		{
-			var existingUser = await _userManager.FindByEmailAsync(model.Email);
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+
+            var existingUser = await _userManager.FindByEmailAsync(userDto.Email);
 			if (existingUser == null)
 			{
-				return await RegisterAsync(model, roleName);
+				return await RegisterGoogleUser(userDto, UserRoles.User.ToString());
 			}
 
-			var authorizationCode = GenerateAuthorizationCode(existingUser.Email);
+			var authorizationCode = GenerateAuthorizationCode(existingUser.Id);
 
 			return (1, "User created successfully!", authorizationCode);
 		}
 
-		public async Task<(int, string, string)> RegisterAsync(RegisterDto model, string roleName)
+		private async Task<(int, string, string)> RegisterGoogleUser(ExternalUserDto userDto, string roleName)
+		{
+            var userNameExists = await _userManager.FindByEmailAsync(userDto.UserName);
+
+            var emailExists = await _userManager.FindByEmailAsync(userDto.Email);
+            if (emailExists != null || userNameExists != null)
+            {
+                return (0, "Email already exists!", string.Empty);
+            }
+
+            ApplicationUser user = new()
+            {
+                Email = userDto.Email,
+                UserName = userDto.UserName,
+                //FirstName = model.FirstName,
+                //LastName = model.LastName,
+                SecurityStamp = Guid.NewGuid().ToString()
+            };
+
+            var createUserResult = await _userManager.CreateAsync(user);
+
+            if (!createUserResult.Succeeded)
+            {
+                return (0, "User creation failed! Please check user details and try again.", string.Empty);
+            }
+
+			var addUserLoginResult = await _userManager.AddLoginAsync(user, new UserLoginInfo(EnumIdentityProviders.Google.ToString(), userDto.ExternalUserId, EnumIdentityProviders.Google.ToString()));
+            if (!addUserLoginResult.Succeeded)
+            {
+                return (0, "Failed to assign external info to user.! Please check user details and try again.", string.Empty);
+            }
+
+            await GiveUserRole(user, roleName);
+
+            var authorizationCode = GenerateAuthorizationCode(user.Id);
+
+            return (1, "User created successfully!", authorizationCode);
+        }
+
+        public async Task<(int, string, string)> RegisterAsync(RegisterDto model, string roleName)
 		{
 			var userNameExists = await _userManager.FindByNameAsync(model.UserName);
 			if (userNameExists != null)
@@ -54,7 +100,6 @@ namespace AuthServer.Services.Auth
 			{
 				return (0, "Email already exists!", string.Empty);
 			}
-
 
 			if (model.Password != model.ConfirmPassword)
 			{
@@ -80,8 +125,10 @@ namespace AuthServer.Services.Auth
 			}
 
 			await GiveUserRole(user, roleName);
+            await _userManager.AddLoginAsync(user, new UserLoginInfo(EnumIdentityProviders.Local.ToString(), user.Id, EnumIdentityProviders.Local.ToString()));
 
-			var authorizationCode = GenerateAuthorizationCode(user.UserName);
+
+            var authorizationCode = GenerateAuthorizationCode(user.Id);
 
 			return (1, "User created successfully!", authorizationCode);
 
@@ -127,46 +174,45 @@ namespace AuthServer.Services.Auth
 				return (0, "Invalid password or password.");
 			}
 
-			//var userRoles = await _userManager.GetRolesAsync(user);
-			//var authClaims = new List<Claim>
-			//{
-			//	new Claim(ClaimTypes.Name, user.UserName),
-			//	new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-			//};
-
-			//foreach (var userRole in userRoles)
-			//{
-			//	authClaims.Add(new Claim(ClaimTypes.Role, userRole));
-			//}
-
-			//string token = GenerateToken(authClaims);
-
-			var authorizationCode = GenerateAuthorizationCode(user.UserName);
+			var authorizationCode = GenerateAuthorizationCode(user.Id);
 
 			return (1, authorizationCode);
 		}
 
 		public async Task<(int, string)> Token(string authorizationCode)
 		{
+			// Add cache check here.
+
 			var userNameObj = _cachingService.Get<string>(authorizationCode);
 			if (userNameObj == null)
 			{
 				return (0, string.Empty);
 			}
 			var userName = userNameObj.ToString();
-			var user = await _userManager.FindByNameAsync(userName);
+			var user = await _userManager.FindByIdAsync(userName);
 			if (user == null)
 			{
 				return (0, string.Empty);
 			}
-			var userRoles = await _userManager.GetRolesAsync(user);
-			var authClaims = new List<Claim>
+            var authClaims = new List<Claim>
 			{
-				new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+				new Claim(JwtRegisteredClaimNames.Name, user.UserName),
+				new Claim(JwtRegisteredClaimNames.Email, user.Email),
 				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 			};
 
-			foreach (var userRole in userRoles)
+            var userLogins = await _userManager.GetLoginsAsync(user);
+			if (userLogins.Count > 0)
+			{
+				foreach (var userLogin in userLogins)
+				{
+					authClaims.Add(new Claim($"{userLogin.ProviderDisplayName.ToLowerInvariant()}_id", userLogin.ProviderKey));
+                }
+            }
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            foreach (var userRole in userRoles)
 			{
 				authClaims.Add(new Claim(ClaimTypes.Role, userRole));
 			}
@@ -220,7 +266,7 @@ namespace AuthServer.Services.Auth
 		//	return users.ToList();
 		//}
 
-		private string GenerateAuthorizationCode(string userName)
+		private string GenerateAuthorizationCode(string userId)
 		{
 			var bytes = new byte[32]; // 256-bit random
 			using (var rng = RandomNumberGenerator.Create())
@@ -232,10 +278,9 @@ namespace AuthServer.Services.Auth
 						  .Replace('+', '-')
 						  .Replace('/', '_'); // URL-safe
 
-
 			var expiryTimeInSeconds = Convert.ToInt32(_configuration["Cache:TokenExpiryTimeInSeconds"]);
 
-			_cachingService.Set(result, userName, new TimeSpan(0, 0, expiryTimeInSeconds));
+			_cachingService.Set(result, userId, new TimeSpan(0, 0, expiryTimeInSeconds));
 			return result;
 		}
 

@@ -4,7 +4,7 @@ namespace AuthServer.Services.Auth
 {
 	public interface IAuthService
 	{
-		Task<(int, string, string)> HandleGoogleUserAsync(RegisterDto model, string roleName);
+		Task<(int, string, string)> HandleGoogleUserAsync(ExternalUserDto userDto);
 		Task<(int, string, string)> RegisterAsync(RegisterDto model, string roleName);
 		Task<(int, string)> AuthorizeAsync(LoginDto loginDto);
 		//Task<List<ApplicationUser>> GetUsers();

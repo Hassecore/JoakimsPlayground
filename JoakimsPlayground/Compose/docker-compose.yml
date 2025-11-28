@@ -33,7 +33,7 @@ services:
             dockerfile: AuthServer/Dockerfile
         image: hassecore/mvc_auth_server
         ports: 
-            - "${MVC_AUTH_PORT}:8080"
+            - "8082:8080"
         env_file:
             - .env
         networks:

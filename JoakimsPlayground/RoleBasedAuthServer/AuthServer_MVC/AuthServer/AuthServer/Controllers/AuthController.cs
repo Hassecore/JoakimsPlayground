@@ -1,5 +1,6 @@
 using AuthServer.Common;
 using AuthServer.Models;
+using AuthServer.Models.Enums;
 using AuthServer.Services.Auth;
 using AuthServer.Services.Caching;
 using Microsoft.AspNetCore.Authentication;
@@ -99,13 +100,15 @@ namespace AuthServer.Controllers
 				return BadRequest("Invalid or expired code challenge.");
 			}
 
-			var registerDto = new RegisterDto
+			var registerDto = new ExternalUserDto
 			{
 				Email = result.Principal.FindFirstValue(ClaimTypes.Email),
 				UserName = result.Principal.FindFirstValue(ClaimTypes.Email),
-			};
+				ExternalUserId = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier),
+				Provider = EnumIdentityProviders.Google,
+            };
 
-			var (status, message, authCode) = await _authService.HandleGoogleUserAsync(registerDto, UserRoles.User.ToString());
+			var (status, message, authCode) = await _authService.HandleGoogleUserAsync(registerDto);
 
 			if (status == 0)
 			{
