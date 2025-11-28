@@ -1,31 +1,31 @@
 version: '3.8'
 
 services:
-    api:
-        build:
-            context: ../API_WithAuth/API_WithAuth
-            dockerfile: Dockerfile
-        image: hassecore/api_withauth
-        ports:
-            - "8080:${API_PORT}"
-        environment:
-            - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
-        env_file:
-            - .env
-        networks:
-            - joakims-playground-network
+    # api_withauth:
+        # build:
+            # context: ../API_WithAuth/API_WithAuth
+            # dockerfile: Dockerfile
+        # image: hassecore/api_withauth
+        # ports:
+            # - "${API_WITHAUTH_PORT}:${CONTAINER_PORT}"
+        # environment:
+            # - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+        # env_file:
+            # - .env
+        # networks:
+            # - joakims-playground-network
 
-    auth_server:
-        build:
-            context: ../RoleBasedAuthServer/RoleBasedAuthServer
-            dockerfile: Dockerfile
-        image: hassecore/rolebasedauthserver
-        ports:
-            - "8081:${AUTH_PORT}"
-        env_file:
-            - .env
-        networks:
-            - joakims-playground-network
+    # auth_server:
+        # build:
+            # context: ../RoleBasedAuthServer/RoleBasedAuthServer
+            # dockerfile: Dockerfile
+        # image: hassecore/rolebasedauthserver
+        # ports:
+            # - "${AUTH_PORT}:${CONTAINER_PORT}"
+        # env_file:
+            # - .env
+        # networks:
+            # - joakims-playground-network
     
     mvc_auth_server:
         build:
@@ -33,7 +33,19 @@ services:
             dockerfile: AuthServer/Dockerfile
         image: hassecore/mvc_auth_server
         ports: 
-            - "8082:8080"
+            - "${MVC_AUTH_PORT}:${CONTAINER_PORT}"
+        env_file:
+            - .env
+        networks:
+            - joakims-playground-network
+
+    api:
+        build:
+            context: ../API/Hassecore.API
+            dockerfile: ..API/Hassecore.API/Hassecore.API/Dockerfile
+        image: hassecore/hassecore_api
+        ports: 
+            - "${API_PORT}:${CONTAINER_PORT}"
         env_file:
             - .env
         networks:
