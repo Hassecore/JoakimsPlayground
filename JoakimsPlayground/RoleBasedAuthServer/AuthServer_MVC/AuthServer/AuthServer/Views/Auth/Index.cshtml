@@ -1,0 +1,14 @@
+﻿@{
+    ViewData["Title"] = "Login / Register";
+}
+
+@{
+    var routeValues = Context.Request.Query
+        .ToDictionary(k => k.Key, v => (string)v.ToString());
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <a asp-controller="Auth" asp-action="UserLogin" class="btn btn-primary" asp-all-route-data="Context.Request.Query.ToDictionary(q => q.Key, q => (string)q.Value.ToString())">Log In</a>
+    <a asp-controller="Auth" asp-action="SignUp" class="btn btn-secondary" asp-all-route-data="Context.Request.Query.ToDictionary(q => q.Key, q => (string)q.Value.ToString())">Register</a>
+</div>

@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+    api:
+        build:
+            context: ../API_WithAuth/API_WithAuth
+            dockerfile: Dockerfile
+        image: hassecore/api_withauth
+        ports:
+            - "8080:${API_PORT}"
+        environment:
+            - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+        env_file:
+            - .env
+        networks:
+            - joakims-playground-network
+
+    auth_server:
+        build:
+            context: ../RoleBasedAuthServer/RoleBasedAuthServer
+            dockerfile: Dockerfile
+        image: hassecore/rolebasedauthserver
+        ports:
+            - "8081:${AUTH_PORT}"
+        env_file:
+            - .env
+        networks:
+            - joakims-playground-network
+    
+    mvc_auth_server:
+        build:
+            context: RoleBasedAuthServer/AuthServer_MVC/AuthServer
+            dockerfile: AuthServer/Dockerfile
+        image: hassecore/mvc_auth_server
+        ports: 
+            - "${MVC_AUTH_PORT}:8080"
+        env_file:
+            - .env
+        networks:
+            - joakims-playground-network
+
+networks:
+    joakims-playground-network:
+        name: joakims-playground-network

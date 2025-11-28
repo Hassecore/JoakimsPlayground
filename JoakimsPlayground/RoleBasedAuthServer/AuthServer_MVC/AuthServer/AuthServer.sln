@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36414.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthServer", "AuthServer\AuthServer.csproj", "{E4CFE305-9975-443E-8611-ADF30FC25D56}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthServer.Data", "AuthServer.Data\AuthServer.Data.csproj", "{E5B5105C-D8A4-4926-B9DD-56C14F541BE0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E4CFE305-9975-443E-8611-ADF30FC25D56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4CFE305-9975-443E-8611-ADF30FC25D56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4CFE305-9975-443E-8611-ADF30FC25D56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4CFE305-9975-443E-8611-ADF30FC25D56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5B5105C-D8A4-4926-B9DD-56C14F541BE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5B5105C-D8A4-4926-B9DD-56C14F541BE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5B5105C-D8A4-4926-B9DD-56C14F541BE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5B5105C-D8A4-4926-B9DD-56C14F541BE0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8AA886CE-5857-41EC-8C70-7D9719813160}
+	EndGlobalSection
+EndGlobal

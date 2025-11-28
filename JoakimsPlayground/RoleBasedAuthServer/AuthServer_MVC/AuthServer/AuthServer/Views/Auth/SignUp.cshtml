@@ -1,0 +1,47 @@
+﻿@{
+    ViewData["Title"] = "Sign up as a new user";
+}
+
+@model AuthServer.Models.RegisterDto
+
+<div class="text-center">
+    <h1 >Sign up</h1>
+</div>
+
+<br />
+
+<a asp-controller="Auth"
+   asp-action="Index"
+   asp-all-route-data="Context.Request.Query.ToDictionary(q => q.Key, q => (string)q.Value.ToString())"
+   class="btn btn-secondary mt-2 mb-4">
+    Back
+</a>
+
+<form asp-action="RegisterForm">
+    @foreach (var kvp in Context.Request.Query)
+    {
+        <input type="hidden" name="@kvp.Key" value="@kvp.Value" />
+    }
+
+
+    <label>Username</label>
+    <input class="form-control" type="text" placeholder="Username" asp-for="UserName"/>
+
+    <label class="mt-4">Password</label>
+    <input class="form-control" type="text" placeholder="Password" asp-for="Password" />
+
+    <label class="mt-4">Confirm password</label>
+    <input class="form-control" type="text" placeholder="Confirm password" asp-for="ConfirmPassword" />
+
+    <label class="mt-4">Email</label>
+    <input class="form-control" type="text" placeholder="Email" asp-for="Email" />
+
+    <button class="btn btn-primary mt-4" type="submit">Sign up</button>
+
+</form>
+@* <a asp-controller="Auth"
+   asp-action="Index"
+   asp-all-route-data="Context.Request.Query.ToDictionary(q => q.Key, q => (string)q.Value.ToString())"
+   class="btn btn-primary mt-2">
+    Back to Index
+</a> *@

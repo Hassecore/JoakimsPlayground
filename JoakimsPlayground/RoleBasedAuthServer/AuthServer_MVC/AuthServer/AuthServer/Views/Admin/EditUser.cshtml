@@ -1,0 +1,36 @@
+﻿@{
+    ViewData["Title"] = "Create / Edit";
+}
+
+@model AuthServer.Models.Admin.EditUserDto
+
+<div>
+    <h1>Edit user</h1>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form asp-action="EditUserForm">
+    <label class="mt-4">Id</label>
+    <input class="form-control" type="text" placeholder="0" asp-for="Id" readonly />
+
+    <label class="mt-4">UserName</label>
+    <input class="form-control" type="text" placeholder="Username" asp-for="UserName" />
+
+    <label class="mt-4">Email</label>
+    <input class="form-control" type="text" placeholder="Email" asp-for="Email" />
+
+    <label class="mt-4">New password</label>
+    <input class="form-control" type="text" placeholder="NotActivated" asp-for="NewPassword" />
+
+    <label class="mt-4">Confirm new password</label>
+    <input class="form-control" type="text" placeholder="NotActivated" asp-for="ConfirmedNewPassword" />
+
+    <button class="btn btn-primary mt-4" type="submit">Apply update</button>
+</form>

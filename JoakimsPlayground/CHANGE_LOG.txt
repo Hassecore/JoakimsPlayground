@@ -1,0 +1,6 @@
+Change log
+
+
+## 2025-07-23
+- Added docker compose for API and Auth server
+

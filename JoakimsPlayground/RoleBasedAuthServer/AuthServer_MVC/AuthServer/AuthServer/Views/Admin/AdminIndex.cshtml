@@ -1,0 +1,57 @@
+﻿@using AuthServer.Models.Admin
+
+@{
+    ViewData["Title"] = "Admin";
+}
+
+@model List<UserOverviewDto>
+
+<div class="text-center">
+    <h1 class="display-4">Users</h1>
+    <br />
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    Id
+                </th>
+                <th>
+                    UserName
+                </th>
+                <th>
+                    Email
+                </th>
+                <th>
+                    Actions
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                foreach (var userOverview in Model)
+                {
+                    <tr>
+                        <td>
+                            @userOverview.Id
+                        </td>
+                        <td>
+                            @userOverview.UserName
+                        </td>
+                        <td>
+                            @userOverview.Email
+                        </td>
+                        <td>
+                            <a asp-action="EditUser" asp-route-id="@userOverview.Id" >Edit</a>
+                            <a asp-action="DeleteUser" asp-route-id="@userOverview.Id" >Delete</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+
+
+    @* <a asp-controller="Auth" asp-action="Login" class="btn btn-primary">Log In</a>
+    <a asp-controller="Auth" asp-action="Register" class="btn btn-secondary">Register</a> *@
+</div>

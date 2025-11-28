@@ -1,0 +1,261 @@
+﻿using AuthServer.Data.UserManagement;
+using AuthServer.Models;
+using AuthServer.Services.Caching;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace AuthServer.Services.Auth
+{
+	public class AuthService : IAuthService
+	{
+		private readonly UserManager<ApplicationUser> _userManager;
+		private readonly RoleManager<IdentityRole> _roleManager;
+		private readonly IConfiguration _configuration;
+		private readonly ICachingService _cachingService;
+
+		public AuthService(UserManager<ApplicationUser> userManager,
+						   RoleManager<IdentityRole> roleManager,
+						   IConfiguration configuration,
+						   ICachingService cachingService)
+		{
+			_userManager = userManager;
+			_roleManager = roleManager;
+			_configuration = configuration;
+			_cachingService = cachingService;
+		}
+
+		public async Task<(int, string, string)> HandleGoogleUserAsync(RegisterDto model, string roleName)
+		{
+			var existingUser = await _userManager.FindByEmailAsync(model.Email);
+			if (existingUser == null)
+			{
+				return await RegisterAsync(model, roleName);
+			}
+
+			var authorizationCode = GenerateAuthorizationCode(existingUser.Email);
+
+			return (1, "User created successfully!", authorizationCode);
+		}
+
+		public async Task<(int, string, string)> RegisterAsync(RegisterDto model, string roleName)
+		{
+			var userNameExists = await _userManager.FindByNameAsync(model.UserName);
+			if (userNameExists != null)
+			{
+				return (0, "Username already exists!", string.Empty);
+			}
+
+			var emailExists = await _userManager.FindByEmailAsync(model.Email);
+			if (emailExists != null)
+			{
+				return (0, "Email already exists!", string.Empty);
+			}
+
+
+			if (model.Password != model.ConfirmPassword)
+			{
+				return (0, "Passwords must match!", string.Empty);
+			}
+
+			ApplicationUser user = new()
+			{
+				Email = model.Email,
+				UserName = model.UserName,
+				//FirstName = model.FirstName,
+				//LastName = model.LastName,
+				SecurityStamp = Guid.NewGuid().ToString(),
+			};
+
+			var createUserResult = string.IsNullOrEmpty(model.Password) ? 
+								   await _userManager.CreateAsync(user) : 
+								   await _userManager.CreateAsync(user, model.Password);
+
+			if (!createUserResult.Succeeded)
+			{
+				return (0, "User creation failed! Please check user details and try again.", string.Empty);
+			}
+
+			await GiveUserRole(user, roleName);
+
+			var authorizationCode = GenerateAuthorizationCode(user.UserName);
+
+			return (1, "User created successfully!", authorizationCode);
+
+		}
+
+		public async Task GiveUserRole(ApplicationUser user, string roleName)
+		{
+			if (!await _roleManager.RoleExistsAsync(roleName))
+			{
+				await _roleManager.CreateAsync(new IdentityRole(roleName));
+			}
+
+			if (await _roleManager.RoleExistsAsync(roleName))
+			{
+				await _userManager.AddToRoleAsync(user, roleName);
+			}
+			else
+			{
+				throw new InvalidOperationException("Role creation failed");
+			}
+		}
+
+		public async Task<IdentityResult> CreateLocalUserAsync(ApplicationUser user, string password)
+		{
+			return await _userManager.CreateAsync(user, password);
+		}
+
+		public async Task<IdentityResult> CreateExternalUserAsync(ApplicationUser user, string password)
+		{
+			return await _userManager.CreateAsync(user);
+		}
+
+		public async Task<(int, string)> AuthorizeAsync(LoginDto model)
+		{
+			var user = await _userManager.FindByNameAsync(model.UserName);
+			if (user == null)
+			{
+				return (0, "Invalid username or password");
+			}
+
+			if (!await _userManager.CheckPasswordAsync(user, model.Password))
+			{
+				return (0, "Invalid password or password.");
+			}
+
+			//var userRoles = await _userManager.GetRolesAsync(user);
+			//var authClaims = new List<Claim>
+			//{
+			//	new Claim(ClaimTypes.Name, user.UserName),
+			//	new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+			//};
+
+			//foreach (var userRole in userRoles)
+			//{
+			//	authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+			//}
+
+			//string token = GenerateToken(authClaims);
+
+			var authorizationCode = GenerateAuthorizationCode(user.UserName);
+
+			return (1, authorizationCode);
+		}
+
+		public async Task<(int, string)> Token(string authorizationCode)
+		{
+			var userNameObj = _cachingService.Get<string>(authorizationCode);
+			if (userNameObj == null)
+			{
+				return (0, string.Empty);
+			}
+			var userName = userNameObj.ToString();
+			var user = await _userManager.FindByNameAsync(userName);
+			if (user == null)
+			{
+				return (0, string.Empty);
+			}
+			var userRoles = await _userManager.GetRolesAsync(user);
+			var authClaims = new List<Claim>
+			{
+				new Claim(ClaimTypes.Name, user.UserName),
+				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+			};
+
+			foreach (var userRole in userRoles)
+			{
+				authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+			}
+
+			return (1, GenerateToken(authClaims));
+		}
+
+		public bool ValidateCodeVerifier(string codeVerifier)
+		{
+			var codeChallenge = GenerateCodeChallenge(codeVerifier);
+
+			var result = _cachingService.Get<string>(codeChallenge);
+
+			return (result != null);
+		}
+
+		public static string GenerateCodeVerifier()
+		{
+			// 32 random bytes = 43-character base64url string
+			var bytes = new byte[32];
+			RandomNumberGenerator.Fill(bytes);
+
+			string base64 = Convert.ToBase64String(bytes);
+
+			// Convert to Base64 URL format
+			return base64
+				.Replace("+", "-")
+				.Replace("/", "_")
+				.Replace("=", ""); // PKCE requires no padding
+		}
+
+		public static string GenerateCodeChallenge(string codeVerifier)
+		{
+			using var sha256 = SHA256.Create();
+			var bytes = Encoding.ASCII.GetBytes(codeVerifier);
+			var hash = sha256.ComputeHash(bytes);
+
+			string base64 = Convert.ToBase64String(hash);
+
+			// Convert to Base64 URL format
+			return base64
+				.Replace("+", "-")
+				.Replace("/", "_")
+				.Replace("=", "");
+		}
+
+		//public async Task<List<ApplicationUser>> GetUsers()
+		//{
+		//	var users = await _userManager.GetUsersInRoleAsync("User");
+
+		//	return users.ToList();
+		//}
+
+		private string GenerateAuthorizationCode(string userName)
+		{
+			var bytes = new byte[32]; // 256-bit random
+			using (var rng = RandomNumberGenerator.Create())
+			{
+				rng.GetBytes(bytes);
+			}
+			var result = Convert.ToBase64String(bytes)
+						  .TrimEnd('=')
+						  .Replace('+', '-')
+						  .Replace('/', '_'); // URL-safe
+
+
+			var expiryTimeInSeconds = Convert.ToInt32(_configuration["Cache:TokenExpiryTimeInSeconds"]);
+
+			_cachingService.Set(result, userName, new TimeSpan(0, 0, expiryTimeInSeconds));
+			return result;
+		}
+
+		private string GenerateToken(IEnumerable<Claim> claims)
+		{
+			var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTKey:Secret"]));
+			var tokenExpiryInMinutes = Convert.ToInt64(_configuration["JWTKey:TokenExpiryTimeInMinutes"]);
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Issuer = _configuration["JWTKey:ValidIssuer"],
+				Audience = _configuration["JWTKey:ValidAudience"],
+				Expires = DateTime.UtcNow.AddMinutes(tokenExpiryInMinutes),
+				SigningCredentials = new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256),
+				Subject = new ClaimsIdentity(claims)
+			};
+
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var token = tokenHandler.CreateToken(tokenDescriptor);
+
+			return tokenHandler.WriteToken(token);
+		}
+	}
+}

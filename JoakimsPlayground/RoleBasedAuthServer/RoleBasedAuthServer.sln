@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35828.75
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoleBasedAuthServer", "RoleBasedAuthServer\RoleBasedAuthServer.csproj", "{AA81622F-B8F8-4180-8EC9-257B05F3A58E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Dev|Any CPU = Dev|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AA81622F-B8F8-4180-8EC9-257B05F3A58E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA81622F-B8F8-4180-8EC9-257B05F3A58E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA81622F-B8F8-4180-8EC9-257B05F3A58E}.Dev|Any CPU.ActiveCfg = Dev|Any CPU
+		{AA81622F-B8F8-4180-8EC9-257B05F3A58E}.Dev|Any CPU.Build.0 = Dev|Any CPU
+		{AA81622F-B8F8-4180-8EC9-257B05F3A58E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA81622F-B8F8-4180-8EC9-257B05F3A58E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1317B18B-36F4-45B7-A4D8-CFB1E3CD8BB6}
+	EndGlobalSection
+EndGlobal
