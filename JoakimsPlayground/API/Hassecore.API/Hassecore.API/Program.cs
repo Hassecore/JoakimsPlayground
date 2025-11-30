@@ -1,8 +1,17 @@
+using Hassecore.API.Data.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Hassecore.API.Data.Repositories;
+using Hassecore.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<HassecoreApiContext>(options =>
+                options.UseInMemoryDatabase("AuthServerDb"));
+
+builder.Services.AddScoped<IBaseRepository, BaseRepository>();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -35,6 +44,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseMiddleware<UserHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
