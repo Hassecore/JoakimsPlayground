@@ -68,9 +68,9 @@ namespace Hassecore.API.Middleware
 
         private bool UserDataIsValid(string? externalId, string? userName, string? email)
         {
-            if (externalId.IsNullOrEmpty() ||
-                userName.IsNullOrEmpty() ||
-                email.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(externalId) ||
+                string.IsNullOrEmpty(userName) ||
+                string.IsNullOrEmpty(email))
             {
                 return false;
             }

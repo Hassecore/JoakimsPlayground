@@ -28,10 +28,16 @@ namespace AuthServer
 			builder.Services.AddScoped<IAuthService, AuthService>();
 			builder.Services.AddScoped<IAdminService, AdminService>();
 
-			builder.Services.AddDbContext<AuthServerDbContext>(options =>
-				options.UseInMemoryDatabase("AuthServerDb"));
+			//builder.Services.AddDbContext<AuthServerDbContext>(options =>
+			//	options.UseInMemoryDatabase("AuthServerDb"));
 
-			builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+            builder.Services.AddDbContext<AuthServerDbContext>(options =>
+			options.UseSqlServer(
+                builder.Configuration.GetConnectionString("DefaultConnection")
+                )
+			);
+
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 							.AddEntityFrameworkStores<AuthServerDbContext>()
 							.AddDefaultTokenProviders();
 

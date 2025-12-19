@@ -1,17 +1,35 @@
+using Hassecore.API.Business.Managers;
+using Hassecore.API.Business.MediatR.UserPairing;
 using Hassecore.API.Data.Context;
+using Hassecore.API.Data.Repositories;
+using Hassecore.API.Middleware;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Reflection;
 using System.Text;
-using Hassecore.API.Data.Repositories;
-using Hassecore.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//builder.Services.AddDbContext<HassecoreApiContext>(options =>
+//                options.UseInMemoryDatabase("AuthServerDb"));
+
 builder.Services.AddDbContext<HassecoreApiContext>(options =>
-                options.UseInMemoryDatabase("AuthServerDb"));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+        )
+    );
 
 builder.Services.AddScoped<IBaseRepository, BaseRepository>();
+builder.Services.AddScoped<IUserPairingService, UserPairingService>();
+
+//builder.Services.AddMediatR(Assembly.GetExecutingAssembly());
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(
+        typeof(RequestPairingCommandHandler).Assembly
+    ));
 
 builder.Services.AddAuthentication(options =>
 {
